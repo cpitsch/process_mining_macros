@@ -96,9 +96,7 @@ macro_rules! trace {
         process_mining::event_log::Trace {
             attributes: vec![process_mining::event_log::Attribute::new(
                 "concept:name".to_string(),
-                // TODO: Use AttributeValue::Id?
-                // process_mining::event_log::AttributeValue::ID(uuid::Uuid::new_v4()),
-                process_mining::event_log::AttributeValue::String(uuid::Uuid::new_v4().into()),
+                process_mining::event_log::AttributeValue::ID(uuid::Uuid::new_v4()),
             )],
             events: [
                 $($crate::event!($name)),*
