@@ -15,11 +15,9 @@ macro_rules! event {
     // Convert identifiers to strings
     // ($name:ident) => {
     ($name:ident) => {
-        // $crate::timestamped_event!(stringify!($name))
         $crate::event!(stringify!($name))
     };
     ($name:ident; $rest:tt) => {
-        // $crate::timestamped_event!(stringify!($name))
         $crate::event!(stringify!($name); $rest)
     };
     // Default to current time
