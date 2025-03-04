@@ -1,5 +1,5 @@
 [package]
-name = "rust4pm-macros"
+name = "process_mining_macros"
 version = "0.1.0"
 edition = "2021"
 
