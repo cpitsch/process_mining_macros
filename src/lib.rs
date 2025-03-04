@@ -97,8 +97,10 @@ macro_rules! trace {
             // TODO: Ideally, instead of setting the timestamp retroactively, it would be passed
             // straight into the macro, but we have no way of knowing the total number of generated
             // events
+            // Kind of like: [$($crate::event!($name; timestamp=$base + chrono::TimeDelta::hours($index))),*]
+            // For now, initially use EPOCH since it is likely faster than getting the current time
             events: [
-                $($crate::event!($name)),*
+                $($crate::event!($name; timestamp=EPOCH)),*
             ].into_iter().enumerate().map(|(idx, mut evt)| {
                 process_mining::event_log::XESEditableAttribute::get_by_key_mut(&mut evt.attributes, "time:timestamp")
                     .unwrap()
