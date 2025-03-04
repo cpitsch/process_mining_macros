@@ -20,9 +20,9 @@ macro_rules! event {
     ($name:ident; $($rest:tt)*) => {
         $crate::event!(stringify!($name); $($rest)*)
     };
-    // Default to current time
+    // Default to timestamp 0 for easier comparisons for tests
     ($name:expr) => {
-        $crate::event!($name; timestamp=NOW)
+        $crate::event!($name; timestamp=EPOCH)
     };
     // Use BASE_EPOCH to use Epoch 0 as the base timestamp
     ($name:expr; timestamp=EPOCH) => {
@@ -76,9 +76,10 @@ macro_rules! trace {
         }
 
     };
-    // Default to the current timestamp as the base timestamp
+    // Default to EPOCH 0 as the base timestamp for easier comparability in tests
+    // (which is the main use-case of these macros)
     ($($name:tt),*) => {
-        $crate::trace!($($name),*; base_timestamp=NOW)
+        $crate::trace!($($name),*; base_timestamp=EPOCH)
     };
     // Use BASE_EPOCH to use Epoch 0 as the base timestamp
     ($($name:tt),*; base_timestamp=EPOCH) => {
