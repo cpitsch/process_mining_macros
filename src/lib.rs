@@ -1,3 +1,19 @@
+#[cfg(feature = "uuid")]
+#[macro_export]
+macro_rules! id_value {
+    () => {
+        process_mining::event_log::AttributeValue::ID(uuid::Uuid::new_v4())
+    };
+}
+
+#[cfg(not(feature = "uuid"))]
+#[macro_export]
+macro_rules! id_value {
+    () => {
+        process_mining::event_log::AttributeValue::Int(0)
+    };
+}
+
 #[macro_export]
 /// Create an [process_mining::event_log::Event]
 ///
@@ -70,7 +86,7 @@ macro_rules! trace {
         process_mining::event_log::Trace {
             attributes: vec![process_mining::event_log::Attribute::new(
                 "concept:name".to_string(),
-                process_mining::event_log::AttributeValue::ID(uuid::Uuid::new_v4()),
+                $crate::id_value!()
             )],
             events: vec![]
         }
@@ -93,7 +109,7 @@ macro_rules! trace {
         process_mining::event_log::Trace {
             attributes: vec![process_mining::event_log::Attribute::new(
                 "concept:name".to_string(),
-                process_mining::event_log::AttributeValue::ID(uuid::Uuid::new_v4()),
+                $crate::id_value!()
             )],
             // TODO: Ideally, instead of setting the timestamp retroactively, it would be passed
             // straight into the macro, but we have no way of knowing the total number of generated

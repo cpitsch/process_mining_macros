@@ -7,4 +7,8 @@ edition = "2021"
 chrono = "0.4.39"
 process_mining = "0.3.22"
 util = "0.1.3"
-uuid = { version = "1.13.1", features = ["v4"] }
+uuid = { version = "1.13.1", features = ["v4"], optional = true }
+
+[features]
+default = ["uuid"]
+uuid = ["dep:uuid"]
