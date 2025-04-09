@@ -27,7 +27,6 @@ macro_rules! id_value {
 /// event!(a; timestamp=NOW); // Create an event with the current time as timestamp
 /// event!(a; timestamp=EPOCH); // Create an event with timestamp 0
 /// ```
-/// `
 macro_rules! event {
     // Convert identifiers to strings
     ($name:ident) => {
@@ -74,11 +73,8 @@ macro_rules! event {
 /// trace!(a,b,c,d); // Creates a trace with events with activities "a", "b", "c", and "d"
 /// trace!(a,b,c,d; base_timestamp=expr); // Use a custom [chrono::Datetime] as the base timestamp
 /// trace!(a,b,c,d; base_timestamp=NOW); // Use the current timestamp as the base timestamp of the trace
-/// trace!(a,b,c,d; base_timestamp=EPOCH); // Use Epoch 0 as the base timestamp of the trace
-/// of the trace
-///
-/// ````
-/// `
+/// trace!(a,b,c,d; base_timestamp=EPOCH); // Use Epoch 0 as the base timestamp of the trace of the trace
+/// ```
 macro_rules! trace {
     // Temporary (?) fix to make empty trace `trace!()` possible. Note that this does not
     // allow for constructs such as `trace!(; base_timestamp=NOW)`.
@@ -143,7 +139,7 @@ macro_rules! trace {
 /// event_log!([a,b,c,d], [a,c,b,d]; base_timestamp=NOW);
 /// // Create an event log where all traces start at timestamp 0
 /// event_log!([a,b,c,d], [a,c,b,d]; base_timestamp=EPOCH);
-/// ````
+/// ```
 macro_rules! event_log {
     // *$(,)? --> Allow trailing comma
     ($([$($items:tt),*]),*; base_timestamp=EPOCH$(,)?) => {
