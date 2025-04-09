@@ -20,7 +20,7 @@ macro_rules! id_value {
 /// # Examples
 ///
 /// ```rust,ignore
-/// use rust4pm_macros::event;
+/// use process_mining_macros::event;
 /// event!(a); // Creates an event with activity "a"
 /// event!("more complicated name"); // Creates an event with activity "more complicated name"
 /// event!(a; timestamp=expr); // Create an event with a custom [chrono::Datetime] as timestamp
@@ -70,7 +70,7 @@ macro_rules! event {
 /// # Examples
 ///
 /// ```rust,ignore
-/// use rust4pm_macros::trace;
+/// use process_mining_macros::trace;
 /// trace!(a,b,c,d); // Creates a trace with events with activities "a", "b", "c", and "d"
 /// trace!(a,b,c,d; base_timestamp=expr); // Use a custom [chrono::Datetime] as the base timestamp
 /// trace!(a,b,c,d; base_timestamp=NOW); // Use the current timestamp as the base timestamp of the trace
@@ -134,7 +134,7 @@ macro_rules! trace {
 /// # Examples
 ///
 /// ```rust,ignore
-/// use rust4pm_macros::event_log;
+/// use process_mining_macros::event_log;
 /// // Create an event log with two traces
 /// event_log!([a,b,c,d], [a,c,b,d]);
 /// // Create an event log where all traces start at a custom timestamp
