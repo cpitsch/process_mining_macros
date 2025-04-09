@@ -23,9 +23,9 @@ macro_rules! id_value {
 /// use rust4pm_macros::event;
 /// event!(a); // Creates an event with activity "a"
 /// event!("more complicated name"); // Creates an event with activity "more complicated name"
-/// event!(a; base_timestamp=expr); // Create an event with a custom [chrono::Datetime] as timestamp
-/// event!(a; base_timestamp=NOW); // Create an event with the current time as timestamp
-/// event!(a; base_timestamp=EPOCH); // Create an event with timestamp 0
+/// event!(a; timestamp=expr); // Create an event with a custom [chrono::Datetime] as timestamp
+/// event!(a; timestamp=NOW); // Create an event with the current time as timestamp
+/// event!(a; timestamp=EPOCH); // Create an event with timestamp 0
 /// ```
 /// `
 macro_rules! event {
