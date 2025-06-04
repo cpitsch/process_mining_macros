@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 #[cfg(feature = "uuid")]
 #[macro_export]
 macro_rules! id_value {
@@ -19,13 +21,17 @@ macro_rules! id_value {
 ///
 /// # Examples
 ///
-/// ```rust,ignore
+/// ```rust
 /// use process_mining_macros::event;
+///
 /// event!(a); // Creates an event with activity "a"
 /// event!("more complicated name"); // Creates an event with activity "more complicated name"
-/// event!(a; timestamp=expr); // Create an event with a custom [chrono::Datetime] as timestamp
 /// event!(a; timestamp=NOW); // Create an event with the current time as timestamp
 /// event!(a; timestamp=EPOCH); // Create an event with timestamp 0
+///
+/// use chrono::{DateTime, FixedOffset};
+/// let dt: DateTime<FixedOffset> = "2025-01-01T00:00:00+02:00".parse().unwrap();
+/// event!(a; timestamp=dt); // Create an event with a custom [chrono::Datetime] as timestamp
 /// ```
 macro_rules! event {
     // Convert identifiers to strings
@@ -68,12 +74,16 @@ macro_rules! event {
 ///
 /// # Examples
 ///
-/// ```rust,ignore
+/// ```rust
 /// use process_mining_macros::trace;
+///
 /// trace!(a,b,c,d); // Creates a trace with events with activities "a", "b", "c", and "d"
-/// trace!(a,b,c,d; base_timestamp=expr); // Use a custom [chrono::Datetime] as the base timestamp
 /// trace!(a,b,c,d; base_timestamp=NOW); // Use the current timestamp as the base timestamp of the trace
 /// trace!(a,b,c,d; base_timestamp=EPOCH); // Use Epoch 0 as the base timestamp of the trace of the trace
+///
+/// use chrono::{DateTime, FixedOffset};
+/// let dt: DateTime<FixedOffset> = "2025-01-01T00:00:00+02:00".parse().unwrap();
+/// trace!(a,b,c,d; base_timestamp=dt); // Use a custom [chrono::Datetime] as the base timestamp
 /// ```
 macro_rules! trace {
     // Temporary (?) fix to make empty trace `trace!()` possible. Note that this does not
@@ -129,17 +139,22 @@ macro_rules! trace {
 ///
 /// # Examples
 ///
-/// ```rust,ignore
+/// ```rust
 /// use process_mining_macros::event_log;
+///
 /// // Create an event log with two traces
 /// event_log!([a,b,c,d], [a,c,b,d]);
-/// // Create an event log where all traces start at a custom timestamp
-/// event_log!([a,b,c,d], [a,c,b,d]; base_timestamp=expr);
 /// // Create an event log where all traces start at the current timestamp
 /// event_log!([a,b,c,d], [a,c,b,d]; base_timestamp=NOW);
 /// // Create an event log where all traces start at timestamp 0
 /// event_log!([a,b,c,d], [a,c,b,d]; base_timestamp=EPOCH);
+///
+/// use chrono::{DateTime, FixedOffset};
+/// let dt: DateTime<FixedOffset> = "2025-01-01T00:00:00+02:00".parse().unwrap();
+/// // Create an event log where all traces start at a custom timestamp
+/// event_log!([a,b,c,d], [a,c,b,d]; base_timestamp=dt);
 /// ```
+// TODO: something like event_log!([a,b,c,d]*3, [a,c,b,d]*4)
 macro_rules! event_log {
     // *$(,)? --> Allow trailing comma
     ($([$($items:tt),*]),*; base_timestamp=EPOCH$(,)?) => {
