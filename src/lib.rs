@@ -133,7 +133,7 @@ macro_rules! event {
 #[macro_export]
 macro_rules! trace {
     (
-        { $($key:expr => $val:expr),* $(,)? };
+        { $($key:expr => $val:tt),* $(,)? };
         $(
             $activity:expr $(; { $($keys:expr => $values:tt),* $(,)?})?
         ),*
@@ -246,9 +246,9 @@ macro_rules! trace {
 /// ```
 macro_rules! event_log {
     (
-        $({ $($key:expr => $val:expr),* $(,)? };)?
+        $({ $($key:expr => $val:tt),* $(,)? };)?
         $(
-            [$($events:tt)*] $({ $($keys:expr => $vals:expr),* $(,)? })?
+            [$($events:tt)*] $({ $($keys:expr => $vals:tt),* $(,)? })?
         ),* $(,)?
      ) => {
          process_mining::event_log::EventLog {
