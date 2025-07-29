@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-
 #[cfg(feature = "uuid")]
 #[macro_export]
 macro_rules! id_value {
@@ -33,6 +32,37 @@ macro_rules! expand_value {
 }
 
 #[macro_export]
+macro_rules! attributes {
+    // ($($($part:tt)+),* $(,)?) => {
+    ($($key:expr => $value:expr),*) => {
+        vec![
+            $(
+                $crate::attribute!($key => $value)
+            ),*
+        ]
+    };
+}
+
+#[macro_export]
+macro_rules! attribute {
+    ($key:expr => $val:expr) => {
+        process_mining::event_log::Attribute::new(
+            $key.into(),
+            process_mining::event_log::AttributeValue::from($crate::expand_value!($val)),
+        )
+    };
+    ($key:expr, $val:expr) => {
+        $crate::attribute!($key => $val)
+    };
+}
+
+// macro_rules! attributes {
+//     ($($assignment:tt),*) => {
+//         vec![ $( $crate::attribute!($assignment)),* ]
+//     };
+// }
+
+#[macro_export]
 /// Create an [process_mining::event_log::Event] without adding any automatic attributes
 ///
 /// # Examples
@@ -43,11 +73,11 @@ macro_rules! expand_value {
 /// _event!("a"); // Creates an event with activity "more complicated name"
 /// // Create an event with the current time as timestamp
 /// _event!("a"; {
-///     "time:timestamp" => NOW
+///     "time:timestamp" => chrono::Utc::now()
 /// });
 /// // Create an event with timestamp 0
 /// _event!("a"; {
-///     "time:timestamp" => EPOCH
+///     "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()
 /// });
 ///
 /// use chrono::{DateTime, FixedOffset};
@@ -61,24 +91,14 @@ macro_rules! _event {
     ($name:expr) => {
         $crate::_event!($name; {})
     };
-    ($name:expr; { $($key:expr => $val:tt),* $(,)? }) => {
+    ($name:expr; { $($key:expr => $value:expr),* $(,)? }) => {
         process_mining::event_log::Event {
             attributes: vec![
-                process_mining::event_log::Attribute::new(
-                    "concept:name".to_string(),
-                    process_mining::event_log::AttributeValue::String(
-                        $name.into()
-                    )
-                ),
+                $crate::attribute!("concept:name" => $name),
                 $(
-                    process_mining::event_log::Attribute::new(
-                        $key.into(),
-                        process_mining::event_log::AttributeValue::from(
-                            $crate::expand_value!($val)
-                        )
-                    )
+                    $crate::attribute!($key => $value)
                 ),*
-            ],
+            ]
         }
     };
 }
@@ -94,11 +114,11 @@ macro_rules! _event {
 /// event!("a"); // Creates an event with activity "more complicated name"
 /// // Create an event with the current time as timestamp
 /// event!("a"; {
-///     "time:timestamp" => NOW
+///     "time:timestamp" => chrono::Utc::now()
 /// });
 /// // Create an event with timestamp 0
 /// event!("a"; {
-///     "time:timestamp" => EPOCH
+///     "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()
 /// });
 ///
 /// use chrono::{DateTime, FixedOffset};
@@ -120,10 +140,9 @@ macro_rules! event {
         {
             process_mining::event_log::XESEditableAttribute::add_attribute(
                 &mut evt.attributes,
-                process_mining::event_log::Attribute::new(
-                    "time:timestamp".to_string(),
-                    process_mining::event_log::AttributeValue::Date($crate::expand_value!(EPOCH)),
-                ),
+                $crate::attribute!(
+                    "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap().fixed_offset()
+                )
             )
         }
         evt
@@ -133,22 +152,25 @@ macro_rules! event {
 #[macro_export]
 macro_rules! trace {
     (
-        { $($key:expr => $val:tt),* $(,)? };
+        { $($key:expr => $value:expr),* $(,)? };
         $(
-            $activity:expr $(; { $($keys:expr => $values:tt),* $(,)?})?
+            $activity:expr $(; { $($keys:expr => $values:expr),* $(,)?})?
         ),*
     ) => {{
         let mut trace = process_mining::event_log::Trace {
-            attributes: vec![
-                $(
-                    process_mining::event_log::Attribute::new(
-                        $key.into(),
-                        process_mining::event_log::AttributeValue::from(
-                            $crate::expand_value!($val)
-                        )
-                    )
-                ),*
-            ],
+            attributes: $crate::attributes!(
+                            $($key => $value),*
+                        ),
+            // attributes: vec![
+            //     $(
+            //         process_mining::event_log::Attribute::new(
+            //             $key.into(),
+            //             process_mining::event_log::AttributeValue::from(
+            //                 $crate::expand_value!($val)
+            //             )
+            //         )
+            //     ),*
+            // ],
             events: vec![
                 $(
                     $crate::_event!($activity; {
@@ -172,11 +194,8 @@ macro_rules! trace {
                 ).is_none()
             {
                 process_mining::event_log::XESEditableAttribute::add_attribute(&mut evt.attributes,
-                    process_mining::event_log::Attribute::new(
-                        "time:timestamp".to_string(),
-                        process_mining::event_log::AttributeValue::from(
-                            $crate::expand_value!(EPOCH)
-                        )
+                    $crate::attribute!(
+                        "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap().fixed_offset()
                     )
                 )
             }
@@ -188,12 +207,15 @@ macro_rules! trace {
                 let prev_timestamp = *process_mining::event_log::XESEditableAttribute::get_by_key(&trace.events[i-1].attributes, "time:timestamp").unwrap().value.try_as_date().expect("Timestamp should be a date.");
                 process_mining::event_log::XESEditableAttribute::add_attribute(
                     &mut trace.events[i].attributes,
-                    process_mining::event_log::Attribute::new(
-                        "time:timestamp".to_string(),
-                        process_mining::event_log::AttributeValue::from(
-                            prev_timestamp + delta,
-                        )
+                    $crate::attribute!(
+                        "time:timestamp" => prev_timestamp + delta
                     )
+                    // process_mining::event_log::Attribute::new(
+                    //     "time:timestamp".to_string(),
+                    //     process_mining::event_log::AttributeValue::from(
+                    //         prev_timestamp + delta,
+                    //     )
+                    // )
                 )
             }
         }
@@ -202,9 +224,8 @@ macro_rules! trace {
         if process_mining::event_log::XESEditableAttribute::get_by_key(&trace.attributes, "concept:name").is_none() {
             process_mining::event_log::XESEditableAttribute::add_attribute(
                 &mut trace.attributes,
-                process_mining::event_log::Attribute::new(
-                    "concept:name".to_string(),
-                    $crate::id_value!()
+                $crate::attribute!(
+                    "concept:name" => $crate::id_value!()
                 )
             )
         }
@@ -238,7 +259,6 @@ macro_rules! trace {
 ///     ["d"],
 /// );
 ///
-/// //     ["a","b","c","d"] {"org:resource" => "Cameron"},
 /// event_log!({};
 ///    ["a", "b", "c", "d"]
 /// );
@@ -246,9 +266,9 @@ macro_rules! trace {
 /// ```
 macro_rules! event_log {
     (
-        $({ $($key:expr => $val:tt),* $(,)? };)?
+        $({ $($key:expr => $val:expr),* $(,)? };)?
         $(
-            [$($events:tt)*] $({ $($keys:expr => $vals:tt),* $(,)? })?
+            [$($events:tt)*] $({ $($keys:expr => $vals:expr),* $(,)? })?
         ),* $(,)?
      ) => {
          process_mining::event_log::EventLog {
@@ -336,10 +356,18 @@ mod tests {
 
     #[test]
     fn timed_event() {
+        #[allow(non_snake_case)]
+        let NOW = chrono::Utc::now().fixed_offset();
+        #[allow(non_snake_case)]
+        let EPOCH = chrono::DateTime::from_timestamp_millis(0)
+            .unwrap()
+            .fixed_offset();
+
         let event_1 = event!("a"; {"time:timestamp" => NOW});
         let event_2 = event!("a"; {"time:timestamp"=> EPOCH});
         let timestamp = chrono::Utc::now().fixed_offset();
         let event_3 = event!("a"; {"time:timestamp"=> timestamp});
+        let _event_4 = event!("a"; {"time:timestamp"=> chrono::Utc::now().fixed_offset()});
 
         // Some time _will_ have passed since the "now" timestamp was computed, so allow
         // at most 1s difference (very pessimistic)
@@ -352,6 +380,21 @@ mod tests {
             chrono::DateTime::from_timestamp_nanos(0)
         );
         assert_eq!(event_to_timestamp(&event_3), timestamp);
+    }
+
+    #[test]
+    fn event_attributes() {
+        // Just try to see if it compiles
+        let _event = event!("a"; {
+            "string_attr" => String::from("Wee"),
+            "str_attr" => "asd",
+            "date_attr" => chrono::Utc::now(),
+            "int_attr" => 5,
+            "float_attr" => 3.7,
+            "bool_attr" => true,
+            "id" => uuid::Uuid::new_v4(),
+            "list" => vec![],
+        });
     }
 
     #[test]
@@ -370,6 +413,10 @@ mod tests {
 
     #[test]
     fn timed_trace() {
+        #[allow(non_snake_case)]
+        let EPOCH = chrono::DateTime::from_timestamp_millis(0)
+            .unwrap()
+            .fixed_offset();
         let trace_1 = trace!("a"; {"time:timestamp" => EPOCH}, "b", "c", "d");
         let epoch = chrono::DateTime::from_timestamp_nanos(0);
         assert_eq!(
@@ -396,6 +443,30 @@ mod tests {
     }
 
     #[test]
+    fn trace_attributes() {
+        // Just try to see if it compiles - trace attributes and events in trace with attributes
+        let _trace = trace!({
+            "string_attr" => String::from("Wee"),
+            "str_attr" => "asd",
+            "date_attr" => chrono::Utc::now(),
+            "int_attr" => 5,
+            "float_attr" => 3.7,
+            "bool_attr" => true,
+            "id" => uuid::Uuid::new_v4(),
+            "list" => vec![],
+        }; "a", "b"; {
+            "string_attr" => String::from("Wee"),
+            "str_attr" => "asd",
+            "date_attr" => chrono::Utc::now(),
+            "int_attr" => 5,
+            "float_attr" => 3.7,
+            "bool_attr" => true,
+            "id" => uuid::Uuid::new_v4(),
+            "list" => vec![],
+        });
+    }
+
+    #[test]
     fn simple_log() {
         let log = event_log!(
             ["a", "b", "c", "d"],
@@ -416,5 +487,42 @@ mod tests {
     #[test]
     fn empty_log() {
         assert!(event_log!().traces.is_empty());
+    }
+
+    #[test]
+    fn event_log_attributes() {
+        // Event log with attributes, trace with attributes, and event with attributes
+        let _log = event_log!(
+        {
+            "string_attr" => String::from("Wee"),
+            "str_attr" => "asd",
+            "date_attr" => chrono::Utc::now(),
+            "int_attr" => 5,
+            "float_attr" => 3.7,
+            "bool_attr" => true,
+            "id" => uuid::Uuid::new_v4(),
+            "list" => vec![],
+        };
+        ["a", "b"; {
+            "string_attr" => String::from("Wee"),
+            "str_attr" => "asd",
+            "date_attr" => chrono::Utc::now(),
+            "int_attr" => 5,
+            "float_attr" => 3.7,
+            "bool_attr" => true,
+            "id" => uuid::Uuid::new_v4(),
+            "list" => vec![],
+        }, "c", "d"] {
+            "string_attr" => String::from("Wee"),
+            "str_attr" => "asd",
+            "date_attr" => chrono::Utc::now(),
+            "int_attr" => 5,
+            "float_attr" => 3.7,
+            "bool_attr" => true,
+            "id" => uuid::Uuid::new_v4(),
+            "list" => vec![],
+        },
+        ["no", "attributes", "in", "this", "trace"],
+        );
     }
 }

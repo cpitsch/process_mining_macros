@@ -11,9 +11,10 @@ This crate adds some useful macros for the `process_mining` crate. Specifically,
 ```rust
 use process_mining_macros::event;
 
-event!("a"); // Creates an event with activity "a"
-event!("a"; {"time:timestamp" => EPOCH}); // Create an event with timestamp 0
-event!("a"; {"time:timestamp" => NOW}); // Create an event with the current time as timestamp
+event!("a"); // Create an event with activity "a" and default timestamp 0
+event!("a"; {"time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()}); // Create an event with timestamp 0
+event!("a"; {"time:timestamp" => chrono::Utc::now()}); // Create an event with the current time as timestamp
+event!("a"; {"cost" => 2.75, "org:resource" => "John"}); // Create an event with custom attributes
 
 // Use a custom timestamp
 use chrono::{DateTime, FixedOffset};
@@ -30,8 +31,8 @@ event!("a"; {"time:timestamp" => dt}); // Create an event with a custom [chrono:
 use process_mining_macros::trace;
 
 trace!("a","b","c","d"); // Creates a trace with events with activities "a", "b", "c", and "d"
-trace!("a"; {"time:timestamp" => NOW},"b","c","d"); // Use the current timestamp as the base timestamp of the trace
-trace!("a"; {"time:timestamp" => EPOCH},"b","c","d"); // Use Epoch 0 as the base timestamp of the trace of the trace
+trace!("a"; {"time:timestamp" => chrono::Utc::now()},"b","c","d"); // Use the current timestamp as the base timestamp of the trace
+trace!("a"; {"time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()},"b","c","d"); // Use Epoch 0 as the base timestamp of the trace of the trace
 
 // Use a custom base timestamp
 use chrono::{DateTime, FixedOffset};
@@ -51,8 +52,8 @@ use process_mining_macros::event_log;
 event_log!(["a","b","c","d"], ["a","c","b","d"]);
 // Create an event log where all traces start at the current timestamp
 event_log!(
-  ["a"; {"time:timestamp" => NOW},"b","c","d"],
-  ["a"; {"time:timestamp" => NOW},"c","b","d"],
+  ["a"; {"time:timestamp" => chrono::Utc::now()},"b","c","d"],
+  ["a"; {"time:timestamp" => chrono::Utc::now()},"c","b","d"],
 );
 
 // Create an event log with trace attributes
