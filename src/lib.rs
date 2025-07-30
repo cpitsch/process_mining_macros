@@ -17,17 +17,6 @@ macro_rules! id_value {
 }
 
 #[macro_export]
-macro_rules! attributes {
-    ($($key:expr => $value:expr),*) => {
-        vec![
-            $(
-                $crate::attribute!($key => $value)
-            ),*
-        ]
-    };
-}
-
-#[macro_export]
 macro_rules! attribute {
     ($key:expr => $val:expr) => {
         process_mining::event_log::Attribute::new(
@@ -41,7 +30,18 @@ macro_rules! attribute {
 }
 
 #[macro_export]
-/// Create an [process_mining::event_log::Event] without adding any automatic attributes
+macro_rules! attributes {
+    ($($key:expr => $value:expr),*) => {
+        vec![
+            $(
+                $crate::attribute!($key => $value)
+            ),*
+        ]
+    };
+}
+
+#[macro_export]
+/// Create an [process_mining::event_log::Event] without adding any automatic attributes.
 ///
 /// # Examples
 ///
@@ -82,7 +82,7 @@ macro_rules! _event {
 }
 
 #[macro_export]
-/// Create an [process_mining::event_log::Event]
+/// Create an [process_mining::event_log::Event].
 ///
 /// # Examples
 ///
