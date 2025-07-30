@@ -230,12 +230,12 @@ macro_rules! event_log {
             global_event_attrs: None,
         };
 
-         log.traces.iter_mut().for_each(|trace| {
+         log.traces.iter_mut().enumerate().for_each(|(idx,trace)| {
             if process_mining::event_log::XESEditableAttribute::get_by_key(&trace.attributes, "concept:name").is_none() {
                 process_mining::event_log::XESEditableAttribute::add_attribute(
                     &mut trace.attributes,
                     $crate::attribute!(
-                        "concept:name" => uuid::Uuid::new_v4()
+                        "concept:name" => i64::try_from(idx).unwrap()
                     )
                 )
             }
