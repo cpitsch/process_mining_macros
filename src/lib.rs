@@ -50,16 +50,15 @@ macro_rules! attributes {
 /// });
 /// ```
 macro_rules! _event {
-    ($name:expr) => {
-        $crate::_event!($name; {})
-    };
-    ($name:expr; { $($key:expr => $value:expr),* $(,)? }) => {
+    ($name:expr $(; { $($key:expr => $value:expr),* $(,)? })?) => {
         process_mining::event_log::Event {
             attributes: vec![
                 $crate::attribute!("concept:name" => $name),
                 $(
-                    $crate::attribute!($key => $value)
-                ),*
+                    $(
+                        $crate::attribute!($key => $value)
+                    ),*
+                )?
             ]
         }
     };
