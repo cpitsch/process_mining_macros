@@ -288,6 +288,8 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that all types of attributes can be made using  the `attribute`
+    /// macro. Uses expressions, literals, and identifiers and each value enum variant.
     fn attribute() {
         assert_eq!(
             attribute!("string_attr" => String::from("Wee")),
@@ -330,6 +332,8 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that all types of attributes can be made using  the `attributes`
+    /// macro. Uses expressions, literals, and identifiers and each value enum variant.
     fn attributes() {
         let id = Uuid::new_v4();
         assert_eq!(
@@ -366,6 +370,7 @@ mod tests {
     }
 
     #[test]
+    /// Test the creation of a simple event.
     fn simple_event() {
         let event_1 = event!("a");
         let event_2 = event!("name with spaces");
@@ -378,6 +383,8 @@ mod tests {
     }
 
     #[test]
+    /// Test the creation of events with attributes on the example of timestamps.
+    /// Uses expressions and identifiers.
     fn timed_event() {
         let event_1 = event!("a"; {"time:timestamp" => Utc::now()});
         let event_2 = event!("a"; {"time:timestamp"=> DateTime::UNIX_EPOCH});
@@ -395,9 +402,10 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that all kinds of attributes can be used on in the `event` macro.
+    /// Only checks that it compiles.
     fn event_attributes() {
-        // Just try to see if it compiles
-        let _event = event!("a"; {
+        event!("a"; {
             "string_attr" => String::from("Wee"),
             "str_attr" => "asd",
             "date_attr" => chrono::Utc::now(),
@@ -410,6 +418,7 @@ mod tests {
     }
 
     #[test]
+    /// Test the creation of a simple trace.
     fn simple_trace() {
         let trace = trace!("a", "b", "c", "d");
         let expected = vec!["a", "b", "c", "d"];
@@ -418,12 +427,25 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that the `trace` macro can create empty traces (with and without
+    /// attributes).
     fn empty_trace() {
-        let empty_trace = trace!();
-        assert!(empty_trace.events.is_empty());
+        assert!(trace!().events.is_empty());
+        assert!(trace!({};).events.is_empty());
+
+        let empty_trace_with_attributes = trace!({"key" => 5};);
+        assert!(empty_trace_with_attributes.events.is_empty());
+        // Only 1 attribute. Trace id is only added in the event_log macro
+        assert!(empty_trace_with_attributes.attributes.len() == 1);
+        assert!(empty_trace_with_attributes
+            .attributes
+            .get_by_key("key")
+            .is_some_and(|x| x.value == AttributeValue::Int(5)))
     }
 
     #[test]
+    /// Test trace creation with event attributes on the example of timestamps using
+    /// expressions and identifiers.
     fn timed_trace() {
         // Pass in expression
         let trace_1 = trace!("a"; {"time:timestamp" => DateTime::UNIX_EPOCH}, "b", "c", "d");
@@ -453,9 +475,11 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that all kinds of attributes can be used on on all levels of the
+    /// `trace` macro. Only checks that it compiles.
     fn trace_attributes() {
-        // Just try to see if it compiles - trace attributes and events in trace with attributes
-        let _trace = trace!({
+        // Trace attributes and events in trace with attributes
+        trace!({
             "string_attr" => String::from("Wee"),
             "str_attr" => "asd",
             "date_attr" => chrono::Utc::now(),
@@ -477,6 +501,7 @@ mod tests {
     }
 
     #[test]
+    /// Test the creation of a simple event log.
     fn simple_log() {
         let log = event_log!(
             ["a", "b", "c", "d"],
@@ -495,14 +520,26 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that the `event_log` macro can create empty event logs (with and
+    /// without attributes).
     fn empty_log() {
         // Empty log
         assert!(event_log!().traces.is_empty());
         // Empty log with attributes
         assert!(event_log!({};).traces.is_empty());
+
+        let empty_event_log_with_attributes = event_log!({"key" => 5};);
+        assert!(empty_event_log_with_attributes.traces.is_empty());
+        assert!(empty_event_log_with_attributes.attributes.len() == 1);
+        assert!(empty_event_log_with_attributes
+            .attributes
+            .get_by_key("key")
+            .is_some_and(|x| x.value == AttributeValue::Int(5)));
     }
 
     #[test]
+    /// Ensure that the `event_log` macro can contain empty traces (with and without
+    /// attributes).
     fn log_with_empty_trace() {
         let log = event_log!([]);
         assert!(log
@@ -522,9 +559,11 @@ mod tests {
     }
 
     #[test]
+    /// Ensure that all kinds of attributes can be used on on all levels of the
+    /// `event_log` macro. Only checks that it compiles.
     fn event_log_attributes() {
         // Event log with attributes, trace with attributes, and event with attributes
-        let _log = event_log!(
+        event_log!(
         {
             "string_attr" => String::from("Wee"),
             "str_attr" => "asd",
@@ -555,6 +594,20 @@ mod tests {
             "list" => vec![],
         },
         ["no", "attributes", "in", "this", "trace"],
+        );
+    }
+
+    #[test]
+    /// Ensure that event log creation (specifically trace id generation) is
+    /// deterministic
+    fn event_log_equality() {
+        assert_eq!(
+            event_log!(["a", "b", "c", "d"], ["a", "c", "b", "d"]),
+            event_log!(["a", "b", "c", "d"], ["a", "c", "b", "d"]),
+        );
+        assert_ne!(
+            event_log!(["a", "b", "c", "d"], ["a", "c", "b", "d"]),
+            event_log!(["a", "c", "b", "d"], ["a", "b", "c", "d"]),
         );
     }
 }
