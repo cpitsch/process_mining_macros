@@ -25,46 +25,6 @@ macro_rules! attributes {
 }
 
 #[macro_export]
-/// Create an [process_mining::event_log::Event] without adding any automatic attributes.
-///
-/// # Examples
-///
-/// ```rust
-/// use process_mining_macros::_event;
-///
-/// _event!("a"); // Creates an event with activity "more complicated name"
-/// // Create an event with the current time as timestamp
-/// _event!("a"; {
-///     "time:timestamp" => chrono::Utc::now()
-/// });
-/// // Create an event with timestamp 0
-/// _event!("a"; {
-///     "time:timestamp" => chrono::DateTime::UNIX_EPOCH
-/// });
-///
-/// use chrono::{DateTime, FixedOffset};
-/// let dt: DateTime<FixedOffset> = "2025-01-01T00:00:00+02:00".parse().unwrap();
-/// // Create an event with a custom [chrono::Datetime] as timestamp
-/// _event!("a"; {
-///     "time:timestamp" => dt
-/// });
-/// ```
-macro_rules! _event {
-    ($name:expr $(; { $($key:expr => $value:expr),* $(,)? })?) => {
-        process_mining::event_log::Event {
-            attributes: vec![
-                $crate::attribute!("concept:name" => $name),
-                $(
-                    $(
-                        $crate::attribute!($key => $value)
-                    ),*
-                )?
-            ]
-        }
-    };
-}
-
-#[macro_export]
 /// Create an [process_mining::event_log::Event].
 ///
 /// # Examples
@@ -90,8 +50,21 @@ macro_rules! _event {
 /// });
 /// ```
 macro_rules! event {
+    // Macro rule to disable adding a default timestamp. Intended for internal use.
+    (NO_TIMESTAMP; $name:expr $(; { $($key:expr => $value:expr),* $(,)? })?) => {
+        process_mining::event_log::Event {
+            attributes: vec![
+                $crate::attribute!("concept:name" => $name),
+                $(
+                    $(
+                        $crate::attribute!($key => $value)
+                    ),*
+                )?
+            ]
+        }
+    };
     ($($input:tt)*) => {{
-        let mut evt = $crate::_event!($($input)*);
+        let mut evt = $crate::event!(NO_TIMESTAMP; $($input)*);
 
         if process_mining::event_log::XESEditableAttribute::get_by_key(
             &evt.attributes,
@@ -124,7 +97,7 @@ macro_rules! trace {
                         ),
             events: vec![
                 $(
-                    $crate::_event!($activity; {
+                    $crate::event!(NO_TIMESTAMP; $activity; {
                         $(
                             $(
                                 $keys => $values
