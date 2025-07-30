@@ -1,21 +1,5 @@
 #![doc = include_str!("../README.md")]
 
-#[cfg(feature = "uuid")]
-#[macro_export]
-macro_rules! id_value {
-    () => {
-        process_mining::event_log::AttributeValue::ID(uuid::Uuid::new_v4())
-    };
-}
-
-#[cfg(not(feature = "uuid"))]
-#[macro_export]
-macro_rules! id_value {
-    () => {
-        process_mining::event_log::AttributeValue::Int(0)
-    };
-}
-
 #[macro_export]
 macro_rules! attribute {
     ($key:expr => $val:expr) => {
@@ -183,14 +167,6 @@ macro_rules! trace {
         }
 
 
-        if process_mining::event_log::XESEditableAttribute::get_by_key(&trace.attributes, "concept:name").is_none() {
-            process_mining::event_log::XESEditableAttribute::add_attribute(
-                &mut trace.attributes,
-                $crate::attribute!(
-                    "concept:name" => $crate::id_value!()
-                )
-            )
-        }
 
         trace
     }};
@@ -232,8 +208,8 @@ macro_rules! event_log {
         $(
             [$($events:tt)*] $({ $($keys:expr => $vals:expr),* $(,)? })?
         ),* $(,)?
-     ) => {
-         process_mining::event_log::EventLog {
+     ) => {{
+         let mut log = process_mining::event_log::EventLog {
              attributes: $crate::attributes!(
                              $(
                                  $($key => $value),*
@@ -252,8 +228,21 @@ macro_rules! event_log {
             classifiers: None,
             global_trace_attrs: None,
             global_event_attrs: None,
-        }
-    }
+        };
+
+         log.traces.iter_mut().for_each(|trace| {
+            if process_mining::event_log::XESEditableAttribute::get_by_key(&trace.attributes, "concept:name").is_none() {
+                process_mining::event_log::XESEditableAttribute::add_attribute(
+                    &mut trace.attributes,
+                    $crate::attribute!(
+                        "concept:name" => uuid::Uuid::new_v4()
+                    )
+                )
+            }
+         });
+
+         log
+    }}
 }
 
 #[cfg(test)]
