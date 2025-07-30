@@ -31,7 +31,9 @@ attributes!(
 ## Events
 
 - Events are created based on an activity name and other optional attributes. 
-  By default, the unix epoch is used as the timestamp.
+  - To provide attributes, the activity name is followed by curly braces, separated
+    by a semicolon `;`. The braces contain comma-separated `key => value` mappings.
+- By default, the unix epoch is used as the timestamp.
 
 ```rust
 use process_mining_macros::event;
@@ -50,6 +52,9 @@ event!("a"; {"time:timestamp" => dt}); // Create an event with a custom [chrono:
 ## Traces
 
 - Traces are a sequence of events, indicated by their activity.
+  - The macro invoction may optionally begin with an attribute definition, indicated by
+    curly braces containing comma-separated `key => value` mappings.
+  - Events may be given attributes following the syntax of the `event` macro.
 - Events with no timestamp set are placed 1 hour after the previous events' `time:timestamp`
 
 ```rust
@@ -67,7 +72,12 @@ trace!("a"; {"time:timestamp" => dt},"b","c","d"); // Use a custom [chrono::Date
 
 ## Event Logs
 
-- Event logs are built by traces, indicated in brackets `[]`.
+- Event logs consist of traces, indicated by brackets `[]`.
+  - The macro invocation may optionally begin with an attribute definition, indicated by
+    curly braces containing comma-separated `key => value` mappings.
+  - Traces (`[]`) may also optionally be followed by an attribute definition.
+  - Events can also be given attributes, following the same syntax as the `event`
+    macro
 
 
 ```rust
