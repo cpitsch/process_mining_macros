@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+
 #[cfg(feature = "uuid")]
 #[macro_export]
 macro_rules! id_value {
@@ -15,25 +16,8 @@ macro_rules! id_value {
     };
 }
 
-/// A utility macro to expand magic identifiers for attribute values.
-#[macro_export]
-macro_rules! expand_value {
-    (NOW) => {
-        chrono::Utc::now().fixed_offset()
-    };
-    (EPOCH) => {
-        chrono::DateTime::from_timestamp_millis(0)
-            .unwrap()
-            .fixed_offset()
-    };
-    ($val:expr) => {
-        $val
-    };
-}
-
 #[macro_export]
 macro_rules! attributes {
-    // ($($($part:tt)+),* $(,)?) => {
     ($($key:expr => $value:expr),*) => {
         vec![
             $(
@@ -48,19 +32,13 @@ macro_rules! attribute {
     ($key:expr => $val:expr) => {
         process_mining::event_log::Attribute::new(
             $key.into(),
-            process_mining::event_log::AttributeValue::from($crate::expand_value!($val)),
+            process_mining::event_log::AttributeValue::from($val),
         )
     };
     ($key:expr, $val:expr) => {
         $crate::attribute!($key => $val)
     };
 }
-
-// macro_rules! attributes {
-//     ($($assignment:tt),*) => {
-//         vec![ $( $crate::attribute!($assignment)),* ]
-//     };
-// }
 
 #[macro_export]
 /// Create an [process_mining::event_log::Event] without adding any automatic attributes
@@ -77,7 +55,7 @@ macro_rules! attribute {
 /// });
 /// // Create an event with timestamp 0
 /// _event!("a"; {
-///     "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()
+///     "time:timestamp" => chrono::DateTime::UNIX_EPOCH
 /// });
 ///
 /// use chrono::{DateTime, FixedOffset};
@@ -118,7 +96,7 @@ macro_rules! _event {
 /// });
 /// // Create an event with timestamp 0
 /// event!("a"; {
-///     "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()
+///     "time:timestamp" => chrono::DateTime::UNIX_EPOCH
 /// });
 ///
 /// use chrono::{DateTime, FixedOffset};
@@ -141,7 +119,7 @@ macro_rules! event {
             process_mining::event_log::XESEditableAttribute::add_attribute(
                 &mut evt.attributes,
                 $crate::attribute!(
-                    "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap().fixed_offset()
+                    "time:timestamp" => chrono::DateTime::UNIX_EPOCH
                 )
             )
         }
@@ -161,16 +139,6 @@ macro_rules! trace {
             attributes: $crate::attributes!(
                             $($key => $value),*
                         ),
-            // attributes: vec![
-            //     $(
-            //         process_mining::event_log::Attribute::new(
-            //             $key.into(),
-            //             process_mining::event_log::AttributeValue::from(
-            //                 $crate::expand_value!($val)
-            //             )
-            //         )
-            //     ),*
-            // ],
             events: vec![
                 $(
                     $crate::_event!($activity; {
@@ -195,7 +163,7 @@ macro_rules! trace {
             {
                 process_mining::event_log::XESEditableAttribute::add_attribute(&mut evt.attributes,
                     $crate::attribute!(
-                        "time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap().fixed_offset()
+                        "time:timestamp" => chrono::DateTime::UNIX_EPOCH
                     )
                 )
             }
@@ -210,12 +178,6 @@ macro_rules! trace {
                     $crate::attribute!(
                         "time:timestamp" => prev_timestamp + delta
                     )
-                    // process_mining::event_log::Attribute::new(
-                    //     "time:timestamp".to_string(),
-                    //     process_mining::event_log::AttributeValue::from(
-                    //         prev_timestamp + delta,
-                    //     )
-                    // )
                 )
             }
         }
@@ -266,24 +228,17 @@ macro_rules! trace {
 /// ```
 macro_rules! event_log {
     (
-        $({ $($key:expr => $val:expr),* $(,)? };)?
+        $({ $($key:expr => $value:expr),* $(,)? };)?
         $(
             [$($events:tt)*] $({ $($keys:expr => $vals:expr),* $(,)? })?
         ),* $(,)?
      ) => {
          process_mining::event_log::EventLog {
-            attributes: vec![
-                $(
-                    $(
-                        process_mining::event_log::Attribute::new(
-                            $key.into(),
-                            process_mining::event_log::AttributeValue::from(
-                                $crate::expand_value!($val)
-                            )
-                        )
-                    ),*
-                )?
-            ],
+             attributes: $crate::attributes!(
+                             $(
+                                 $($key => $value),*
+                             )?
+                         ),
             traces: vec![
                 $(
                     $crate::trace!(
@@ -303,7 +258,7 @@ macro_rules! event_log {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, FixedOffset, TimeDelta, Utc};
     use process_mining::{
         event_log::{Event, Trace, XESEditableAttribute},
         EventLog,
@@ -356,18 +311,10 @@ mod tests {
 
     #[test]
     fn timed_event() {
-        #[allow(non_snake_case)]
-        let NOW = chrono::Utc::now().fixed_offset();
-        #[allow(non_snake_case)]
-        let EPOCH = chrono::DateTime::from_timestamp_millis(0)
-            .unwrap()
-            .fixed_offset();
-
-        let event_1 = event!("a"; {"time:timestamp" => NOW});
-        let event_2 = event!("a"; {"time:timestamp"=> EPOCH});
+        let event_1 = event!("a"; {"time:timestamp" => Utc::now()});
+        let event_2 = event!("a"; {"time:timestamp"=> DateTime::UNIX_EPOCH});
         let timestamp = chrono::Utc::now().fixed_offset();
         let event_3 = event!("a"; {"time:timestamp"=> timestamp});
-        let _event_4 = event!("a"; {"time:timestamp"=> chrono::Utc::now().fixed_offset()});
 
         // Some time _will_ have passed since the "now" timestamp was computed, so allow
         // at most 1s difference (very pessimistic)
@@ -375,10 +322,7 @@ mod tests {
             chrono::Utc::now().fixed_offset() - event_to_timestamp(&event_1)
                 < chrono::TimeDelta::seconds(1)
         );
-        assert_eq!(
-            event_to_timestamp(&event_2),
-            chrono::DateTime::from_timestamp_nanos(0)
-        );
+        assert_eq!(event_to_timestamp(&event_2), DateTime::UNIX_EPOCH);
         assert_eq!(event_to_timestamp(&event_3), timestamp);
     }
 
@@ -413,31 +357,29 @@ mod tests {
 
     #[test]
     fn timed_trace() {
-        #[allow(non_snake_case)]
-        let EPOCH = chrono::DateTime::from_timestamp_millis(0)
-            .unwrap()
-            .fixed_offset();
-        let trace_1 = trace!("a"; {"time:timestamp" => EPOCH}, "b", "c", "d");
-        let epoch = chrono::DateTime::from_timestamp_nanos(0);
+        // Pass in expression
+        let trace_1 = trace!("a"; {"time:timestamp" => DateTime::UNIX_EPOCH}, "b", "c", "d");
+        let epoch = DateTime::from_timestamp_nanos(0);
         assert_eq!(
             trace_to_timestamps(&trace_1),
             vec![
                 epoch,
-                epoch + chrono::TimeDelta::hours(1),
-                epoch + chrono::TimeDelta::hours(2),
-                epoch + chrono::TimeDelta::hours(3),
+                epoch + TimeDelta::hours(1),
+                epoch + TimeDelta::hours(2),
+                epoch + TimeDelta::hours(3),
             ]
         );
 
-        let timestamp = chrono::Utc::now().fixed_offset();
+        // Pass in identifier
+        let timestamp = chrono::Utc::now();
         let trace_2 = trace!("a"; {"time:timestamp" => timestamp},"b","c","d");
         assert_eq!(
             trace_to_timestamps(&trace_2),
             vec![
                 timestamp,
-                timestamp + chrono::TimeDelta::hours(1),
-                timestamp + chrono::TimeDelta::hours(2),
-                timestamp + chrono::TimeDelta::hours(3),
+                timestamp + TimeDelta::hours(1),
+                timestamp + TimeDelta::hours(2),
+                timestamp + TimeDelta::hours(3),
             ]
         );
     }

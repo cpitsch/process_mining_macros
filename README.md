@@ -32,7 +32,7 @@ use process_mining_macros::trace;
 
 trace!("a","b","c","d"); // Creates a trace with events with activities "a", "b", "c", and "d"
 trace!("a"; {"time:timestamp" => chrono::Utc::now()},"b","c","d"); // Use the current timestamp as the base timestamp of the trace
-trace!("a"; {"time:timestamp" => chrono::DateTime::from_timestamp_millis(0).unwrap()},"b","c","d"); // Use Epoch 0 as the base timestamp of the trace of the trace
+trace!("a"; {"time:timestamp" => chrono::DateTime::UNIX_EPOCH},"b","c","d"); // Use unix epoch 0 as the base timestamp of the trace of the trace
 
 // Use a custom base timestamp
 use chrono::{DateTime, FixedOffset};
