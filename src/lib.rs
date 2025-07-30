@@ -31,7 +31,7 @@ macro_rules! attribute {
 
 #[macro_export]
 macro_rules! attributes {
-    ($($key:expr => $value:expr),*) => {
+    ($($key:expr => $value:expr),* $(,)?) => {
         vec![
             $(
                 $crate::attribute!($key => $value)
@@ -260,9 +260,10 @@ macro_rules! event_log {
 mod tests {
     use chrono::{DateTime, FixedOffset, TimeDelta, Utc};
     use process_mining::{
-        event_log::{Event, Trace, XESEditableAttribute},
+        event_log::{Attribute, AttributeValue, Event, Trace, XESEditableAttribute},
         EventLog,
     };
+    use uuid::Uuid;
 
     fn event_to_activity(event: &Event) -> &str {
         event
@@ -295,6 +296,84 @@ mod tests {
 
     fn log_to_activities(event_log: &EventLog) -> Vec<Vec<&str>> {
         event_log.traces.iter().map(trace_to_activities).collect()
+    }
+
+    #[test]
+    fn attribute() {
+        assert_eq!(
+            attribute!("string_attr" => String::from("Wee")),
+            Attribute::new(
+                "string_attr".to_string(),
+                AttributeValue::String(String::from("Wee"))
+            )
+        );
+        assert_eq!(
+            attribute!("str_attr" => "asd"),
+            Attribute::new(
+                "str_attr".to_string(),
+                AttributeValue::String(String::from("asd"))
+            )
+        );
+        assert_eq!(
+            attribute!("date_attr" => DateTime::UNIX_EPOCH),
+            Attribute::new(
+                "date_attr".to_string(),
+                AttributeValue::Date(DateTime::UNIX_EPOCH.fixed_offset())
+            )
+        );
+        assert_eq!(
+            attribute!("int_attr" => 5),
+            Attribute::new("int_attr".to_string(), AttributeValue::Int(5))
+        );
+        assert_eq!(
+            attribute!("float_attr" => 3.7),
+            Attribute::new("float_attr".to_string(), AttributeValue::Float(3.7))
+        );
+        assert_eq!(
+            attribute!("bool_attr".to_string() => true),
+            Attribute::new("bool_attr".to_string(), AttributeValue::Boolean(true))
+        );
+        attribute!("id" => Uuid::new_v4());
+        assert_eq!(
+            attribute!("list" => vec![]),
+            Attribute::new("list".to_string(), AttributeValue::List(vec![]))
+        );
+    }
+
+    #[test]
+    fn attributes() {
+        let id = Uuid::new_v4();
+        assert_eq!(
+            attributes!(
+                "bool_attr".to_string() => true,
+                "date_attr" => DateTime::UNIX_EPOCH,
+                "float_attr" => 3.7,
+                "id" => id,
+                "int_attr" => 5,
+                "list" => vec![],
+                "str_attr" => "asd",
+                "string_attr" => String::from("Wee")
+            ),
+            vec![
+                Attribute::new("bool_attr".to_string(), AttributeValue::Boolean(true)),
+                Attribute::new(
+                    "date_attr".to_string(),
+                    AttributeValue::Date(DateTime::UNIX_EPOCH.fixed_offset())
+                ),
+                Attribute::new("float_attr".to_string(), AttributeValue::Float(3.7)),
+                Attribute::new("id".to_string(), AttributeValue::ID(id)),
+                Attribute::new("int_attr".to_string(), AttributeValue::Int(5)),
+                Attribute::new("list".to_string(), AttributeValue::List(vec![])),
+                Attribute::new(
+                    "str_attr".to_string(),
+                    AttributeValue::String(String::from("asd"))
+                ),
+                Attribute::new(
+                    "string_attr".to_string(),
+                    AttributeValue::String(String::from("Wee"))
+                ),
+            ]
+        )
     }
 
     #[test]
@@ -428,7 +507,29 @@ mod tests {
 
     #[test]
     fn empty_log() {
+        // Empty log
         assert!(event_log!().traces.is_empty());
+        // Empty log with attributes
+        assert!(event_log!({};).traces.is_empty());
+    }
+
+    #[test]
+    fn log_with_empty_trace() {
+        let log = event_log!([]);
+        assert!(log
+            .traces
+            .first()
+            .is_some_and(|trace| trace.events.is_empty()));
+
+        // Can also use attributes for the empty trace
+        let log_2 = event_log!([] {"key" => "value"});
+        assert!(log_2.traces.first().is_some_and(|trace| {
+            trace.events.is_empty()
+                && trace
+                    .attributes
+                    .get_by_key("key")
+                    .is_some_and(|attr| attr.value == AttributeValue::String("value".to_string()))
+        }));
     }
 
     #[test]
